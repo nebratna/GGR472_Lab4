@@ -17,7 +17,8 @@ const map = new mapboxgl.Map({
     zoom: 12 // starting zoom level
 });
 
-
+//Adding zoom and rotation controls to the map
+map.addControl(new mapboxgl.NavigationControl());
 
 /*--------------------------------------------------------------------
 Step 2: VIEW GEOJSON POINT DATA ON MAP
@@ -25,6 +26,12 @@ Step 2: VIEW GEOJSON POINT DATA ON MAP
 //HINT: Create an empty variable
 //      Use the fetch method to access the GeoJSON from your online repository
 //      Convert the response to JSON format and then store the response in your new variable
+
+//Store GeoJSON from URL as variable
+let collisionsgeojson;
+
+//Fetch GeoJSON from URL and store response
+fetch()
 
 
 
