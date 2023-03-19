@@ -7,12 +7,12 @@ GGR472 LAB 4: Incorporating GIS Analysis into web maps using Turf.js
 Step 1: INITIALIZE MAP
 --------------------------------------------------------------------*/
 //Define access token
-mapboxgl.accessToken = ''; //****ADD YOUR PUBLIC ACCESS TOKEN*****
+mapboxgl.accessToken = 'pk.eyJ1IjoibmVicmF0bmEiLCJhIjoiY2xjdmZ6Z3I0MDdoODNycWtvNDVuYjJydCJ9.MU8-uPe3u6ya0aTiMr079g'; //****ADD YOUR PUBLIC ACCESS TOKEN*****
 
 //Initialize map and edit to your preference
 const map = new mapboxgl.Map({
     container: 'map', //container id in HTML
-    style: '',  //****ADD MAP STYLE HERE *****
+    style: 'mapbox://styles/nebratna/clf2y6xcs002r01o5kcpwugoc',  //****ADD MAP STYLE HERE *****
     center: [-79.39, 43.65],  // starting point, longitude/latitude
     zoom: 12 // starting zoom level
 });
