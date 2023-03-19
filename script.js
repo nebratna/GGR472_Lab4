@@ -55,8 +55,8 @@ map.on('load', () => {
             'circle-color': 'red'
         }
     });
+
 });
-    
 /*--------------------------------------------------------------------
     Step 3: CREATE BOUNDING BOX AND HEXGRID
 --------------------------------------------------------------------*/
@@ -64,6 +64,43 @@ map.on('load', () => {
 //      First create a bounding box around the collision point data then store as a feature collection variable
 //      Access and store the bounding box coordinates as an array variable
 //      Use bounding box coordinates as argument in the turf hexgrid function
+
+map.on('load', () => {
+    let bboxgeojson;
+    let bbox = turf.envelope(collisionsgeojson); //using turf to create an 'envelope' (bounding box) around points
+    // let bboxscaled = turf.transformScale(bbox, 1.10); //scale bbox up by 10%
+
+    //put the resulting envelope in a GeoJSON format FeatureCollection
+    bboxgeojson = {
+        "type": "FeatureCollection",
+        "features": [bbox]
+    };
+
+    map.addSource('collisions-box', {
+        type: 'geojson',
+        data: bboxgeojson
+    });
+
+    map.addLayer({
+        'id': 'collisions-box-layer',
+        'type': 'fill',
+        'source': 'collisions-box',
+        'paint': {
+            'fill-color': 'grey',
+            'fill-opacity': 0.5,
+            'fill-outline-color': 'black'
+        }
+    });
+})
+
+
+
+
+
+
+
+
+
 
 
 
