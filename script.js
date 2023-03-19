@@ -13,8 +13,8 @@ mapboxgl.accessToken = 'pk.eyJ1IjoibmVicmF0bmEiLCJhIjoiY2xjdmZ6Z3I0MDdoODNycWtvN
 const map = new mapboxgl.Map({
     container: 'map', //container id in HTML
     style: 'mapbox://styles/nebratna/clf2y6xcs002r01o5kcpwugoc',  //****ADD MAP STYLE HERE *****
-    center: [-79.39, 43.65],  // starting point, longitude/latitude
-    zoom: 12 // starting zoom level
+    center: [-79.39, 43.7056],  // starting point, longitude/latitude
+    zoom: 10 // starting zoom level
 });
 
 //Adding zoom and rotation controls to the map
@@ -27,14 +27,36 @@ Step 2: VIEW GEOJSON POINT DATA ON MAP
 //      Use the fetch method to access the GeoJSON from your online repository
 //      Convert the response to JSON format and then store the response in your new variable
 
-//Store GeoJSON from URL as variable
-let collisionsgeojson;
+let collisionsgeojson; //new empty variable
 
-//Fetch GeoJSON from URL and store response
-fetch()
+fetch('https://raw.githubusercontent.com/nebratna/GGR472_Lab4/main/data/pedcyc_collision_06-21.geojson') // accessed GeoJSON via GitHub, clicked on GeoJSON in the data folder and then on RAW button which should appear, if it does not reload the GeoJSON file once more
+    .then(response => response.json()) //converts the response to JSON format
+    .then(response => {
+        console.log(response); //Checking response in console
+        collisionsgeojson = response; //Store GeoJSON as variable using URL from fetch response
+    });
 
+//Load data to map using GeoJSON as variable
 
+map.on('load', () => {
 
+    //Add datasource using GeoJSON variable
+    map.addSource('collisions-TO', {
+        type: 'geojson',
+        data: collisionsgeojson
+    });
+
+    map.addLayer({
+        'id': 'collisions-TO-layer',
+        'type': 'circle',
+        'source': 'collisions-TO',
+        'paint': {
+            'circle-radius': 3,
+            'circle-color': 'red'
+        }
+    });
+});
+    
 /*--------------------------------------------------------------------
     Step 3: CREATE BOUNDING BOX AND HEXGRID
 --------------------------------------------------------------------*/
