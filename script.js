@@ -131,8 +131,6 @@ map.on('load', () => {
     //     }
     // });
 
-
-
     /*--------------------------------------------------------------------
     Step 4: AGGREGATE COLLISIONS BY HEXGRID
     --------------------------------------------------------------------*/
@@ -153,6 +151,7 @@ map.on('load', () => {
         }
     })
     console.log(maxcollis); // to see what the highest number of collisions in a single hexigon is = 55
+    console.log(collishex);
 
     // /*--------------------------------------------------------------------
     // Step 5: FINALIZE YOUR WEB MAP
@@ -177,7 +176,7 @@ map.on('load', () => {
             'fill-color': [
                 'step',
                 ['get', 'COUNT'],
-                '#800026',
+                '#c4c1c0',
                 10, '#bd0026',
                 25, '#e31a1c'
             ],
@@ -186,3 +185,25 @@ map.on('load', () => {
         }
     });
 });
+
+/*-----------------------------------------------------------------
+ADDING MOUSE CLICK EVENT FOR LAYER
+-----------------------------------------------------------------*/
+
+// Change the cursor to a pointer when the mouse is over the collis-count-hex-grid-layer layer.
+map.on('mouseenter', 'collis-count-hex-grid-layer', () => {
+    map.getCanvas().style.cursor = 'pointer';
+});
+
+// Change it back to a pointer when it leaves.
+map.on('mouseleave', 'collis-count-hex-grid-layer', () => {
+    map.getCanvas().style.cursor = '';
+});
+
+map.on('click', 'collis-count-hex-grid-layer', (e) => {
+    new mapboxgl.Popup() //Declare new popup object on each click
+        .setLngLat(e.lngLat) //Use method to set coordinates of popup based on mouse click location
+        .setHTML("<b>Number of collisions:</b> " + "<br>" + e.features[0].properties.COUNT) //Use click event properties to write text for popup
+        .addTo(map); //Show  popup on map
+});
+
