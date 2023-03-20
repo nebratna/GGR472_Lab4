@@ -57,6 +57,7 @@ map.on('load', () => {
     });
 
 });
+
 /*--------------------------------------------------------------------
     Step 3: CREATE BOUNDING BOX AND HEXGRID
 --------------------------------------------------------------------*/
@@ -68,58 +69,120 @@ map.on('load', () => {
 map.on('load', () => {
     let bboxgeojson;
     let bbox = turf.envelope(collisionsgeojson); //using turf to create an 'envelope' (bounding box) around points
-    // let bboxscaled = turf.transformScale(bbox, 1.10); //scale bbox up by 10%
+    let bboxscaled = turf.transformScale(bbox, 1.10); //scale bbox up by 10%
 
     //put the resulting envelope in a GeoJSON format FeatureCollection
     bboxgeojson = {
         "type": "FeatureCollection",
-        "features": [bbox]
+        "features": [bboxscaled]
     };
 
-    map.addSource('collisions-box', {
+    // map.addSource('collisions-box', {  //uncomment to visualize the bounding box
+    //     type: 'geojson',
+    //     data: bboxgeojson
+    // });
+
+    // map.addLayer({
+    //     'id': 'collisions-box-layer',
+    //     'type': 'fill',
+    //     'source': 'collisions-box',
+    //     'paint': {
+    //         'fill-color': 'grey',
+    //         'fill-opacity': 0.5,
+    //         'fill-outline-color': 'black'
+    //     }
+    // });
+
+    //CREATING A HEXGRID
+
+    //exploring the bbox output first in the console
+    console.log(bbox);
+    console.log(bbox.geometry.coordinates);
+    console.log(bbox.geometry.coordinates[0][0][0]); //minX
+    console.log(bbox.geometry.coordinates[0][0][1]); //minY
+    console.log(bbox.geometry.coordinates[0][1][0]); //maxX
+    console.log(bbox.geometry.coordinates[0][2][1]); //maxY
+
+    //exploring the bbox scaled output in the console
+    console.log(bboxscaled);
+
+    let bboxscaledcoords = [  //creating a variable to store bbox coordinates in the order minX, minY, maxX, maxY
+        bboxscaled.geometry.coordinates[0][0][0],
+        bboxscaled.geometry.coordinates[0][0][1],
+        bboxscaled.geometry.coordinates[0][1][0],
+        bboxscaled.geometry.coordinates[0][2][1]
+    ];
+
+    let hexgeojson = turf.hexGrid(bboxscaledcoords, 0.5, { units: 'kilometers' });
+
+    // map.addSource('bboxscaled-collis-hex-grid', {
+    //     type: 'geojson',
+    //     data: hexgeojson
+    // });
+
+    // map.addLayer({
+    //     'id': 'bboxscaled-hex-grid-layer',
+    //     'type': 'fill',
+    //     'source': 'bboxscaled-collis-hex-grid',
+    //     'paint': {
+    //         'fill-color': 'grey',
+    //         'fill-opacity': 0.4,
+    //         'fill-outline-color': 'white'
+    //     }
+    // });
+
+
+
+    /*--------------------------------------------------------------------
+    Step 4: AGGREGATE COLLISIONS BY HEXGRID
+    --------------------------------------------------------------------*/
+    //HINT: Use Turf collect function to collect all '_id' properties from the collision points data for each heaxagon
+    //      View the collect output in the console. Where there are no intersecting points in polygons, arrays will be empty
+
+    let collishex = turf.collect(hexgeojson, collisionsgeojson, '_id', 'values'); //groups all _id by pollygon
+
+    //count the number of features inside each hexagon, and identify maximum value
+
+    let maxcollis = 0;
+
+    collishex.features.forEach((feature) => { //initiating a method that loops through every single hexigon in collishex 
+        feature.properties.COUNT = feature.properties.values.length // creates a new property field called COUNT that counts the number of _id that are collected within a pollygon
+        if (feature.properties.COUNT > maxcollis) { // loops through all hexagons until it finds the highest COUNT value
+            // console.log(feature);
+            maxcollis = feature.properties.COUNT // if the COUNT is greater than the existing maxcollis the new maxcollis is assigned
+        }
+    })
+    console.log(maxcollis); // to see what the highest number of collisions in a single hexigon is = 55
+
+    // /*--------------------------------------------------------------------
+    // Step 5: FINALIZE YOUR WEB MAP
+    // --------------------------------------------------------------------*/
+    //HINT: Think about the display of your data and usability of your web map.
+    //      Update the addlayer paint properties for your hexgrid using:
+    //        - an expression
+    //        - The COUNT attribute
+    //        - The maximum number of collisions found in a hexagon
+    //      Add a legend and additional functionality including pop-up windows
+
+    map.addSource('collis-count-hex-grid', {
         type: 'geojson',
-        data: bboxgeojson
+        data: collishex
     });
 
     map.addLayer({
-        'id': 'collisions-box-layer',
+        'id': 'collis-count-hex-grid-layer',
         'type': 'fill',
-        'source': 'collisions-box',
+        'source': 'collis-count-hex-grid',
         'paint': {
-            'fill-color': 'grey',
-            'fill-opacity': 0.5,
-            'fill-outline-color': 'black'
+            'fill-color': [
+                'step',
+                ['get', 'COUNT'],
+                '#800026',
+                10, '#bd0026',
+                25, '#e31a1c'
+            ],
+            'fill-opacity': 0.4,
+            'fill-outline-color': 'white'
         }
     });
-})
-
-
-
-
-
-
-
-
-
-
-
-
-/*--------------------------------------------------------------------
-Step 4: AGGREGATE COLLISIONS BY HEXGRID
---------------------------------------------------------------------*/
-//HINT: Use Turf collect function to collect all '_id' properties from the collision points data for each heaxagon
-//      View the collect output in the console. Where there are no intersecting points in polygons, arrays will be empty
-
-
-
-// /*--------------------------------------------------------------------
-// Step 5: FINALIZE YOUR WEB MAP
-// --------------------------------------------------------------------*/
-//HINT: Think about the display of your data and usability of your web map.
-//      Update the addlayer paint properties for your hexgrid using:
-//        - an expression
-//        - The COUNT attribute
-//        - The maximum number of collisions found in a hexagon
-//      Add a legend and additional functionality including pop-up windows
-
-
+});
