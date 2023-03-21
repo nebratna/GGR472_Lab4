@@ -12,7 +12,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoibmVicmF0bmEiLCJhIjoiY2xjdmZ6Z3I0MDdoODNycWtvN
 //Initialize map and edit to your preference
 const map = new mapboxgl.Map({
     container: 'map', //container id in HTML
-    style: 'mapbox://styles/nebratna/clf2y6xcs002r01o5kcpwugoc',  //****ADD MAP STYLE HERE *****
+    style: 'mapbox://styles/nebratna/clfhcbuja009501pdvnf1gquj',  //****ADD MAP STYLE HERE *****
     center: [-79.39, 43.7056],  // starting point, longitude/latitude
     zoom: 10 // starting zoom level
 });
@@ -51,9 +51,22 @@ map.on('load', () => {
         'type': 'circle',
         'source': 'collisions-TO',
         'paint': {
-            'circle-radius': 3,
+            'circle-radius': 2,
+            'circle-color': 'black'
+        },
+    });
+
+    //Add layer with Pedestrian-involved collisions 
+    map.addLayer({
+        'id': 'involvmenttype-layer',
+        'type': 'circle',
+        'source': 'collisions-TO',
+        'paint': {
+            'circle-radius': 2,
             'circle-color': 'red'
-        }
+        },
+        'filter':
+            ['==', ['get', 'INVTYPE'], 'Pedestrian'],
     });
 
 });
@@ -113,23 +126,8 @@ map.on('load', () => {
         bboxscaled.geometry.coordinates[0][2][1]
     ];
 
-    let hexgeojson = turf.hexGrid(bboxscaledcoords, 0.5, { units: 'kilometers' });
+    let hexgeojson = turf.hexGrid(bboxscaledcoords, 1.0, { units: 'kilometers' });
 
-    // map.addSource('bboxscaled-collis-hex-grid', {
-    //     type: 'geojson',
-    //     data: hexgeojson
-    // });
-
-    // map.addLayer({
-    //     'id': 'bboxscaled-hex-grid-layer',
-    //     'type': 'fill',
-    //     'source': 'bboxscaled-collis-hex-grid',
-    //     'paint': {
-    //         'fill-color': 'grey',
-    //         'fill-opacity': 0.4,
-    //         'fill-outline-color': 'white'
-    //     }
-    // });
 
     /*--------------------------------------------------------------------
     Step 4: AGGREGATE COLLISIONS BY HEXGRID
@@ -141,7 +139,11 @@ map.on('load', () => {
 
     //count the number of features inside each hexagon, and identify maximum value
 
-    let maxcollis = 0;
+    let maxcollis = 0; //highest collission number
+    let sum = 0; //sum of all collissions
+    let mean = 0; //mean of all collisions
+    let summeansq = 0; //(x- mean)squared, used to calculate standard deviation of collisions
+    let num = 0; //count of all collisions
 
     collishex.features.forEach((feature) => { //initiating a method that loops through every single hexigon in collishex 
         feature.properties.COUNT = feature.properties.values.length // creates a new property field called COUNT that counts the number of _id that are collected within a pollygon
@@ -150,8 +152,39 @@ map.on('load', () => {
             maxcollis = feature.properties.COUNT // if the COUNT is greater than the existing maxcollis the new maxcollis is assigned
         }
     })
+
+    // Calculating standard deviation of COUNT
+
+    collishex.features.forEach((feature) => {
+        if (feature.properties.COUNT > 0) {
+            sum += feature.properties.COUNT
+        }
+    })
+
+    mean = sum / 158
+
+    collishex.features.forEach((feature) => {
+        if (feature.properties.COUNT > 0) {// excluding most of the hex boxes that are on the water, only 2 with 0 in TO
+            summeansq += (feature.properties.COUNT - mean) * (feature.properties.COUNT - mean)
+        }
+    })
+
+    collishex.features.forEach((feature) => {
+        if (feature.properties.COUNT > 0) {
+            num += 1
+        }
+    })
+
+    stdev = (summeansq / num) ** 0.5
+
     console.log(maxcollis); // to see what the highest number of collisions in a single hexigon is = 55
     console.log(collishex);
+    console.log(sum);
+    console.log(mean);
+    console.log(summeansq);
+    console.log(num);
+    console.log(stdev);
+
 
     // /*--------------------------------------------------------------------
     // Step 5: FINALIZE YOUR WEB MAP
@@ -163,26 +196,33 @@ map.on('load', () => {
     //        - The maximum number of collisions found in a hexagon
     //      Add a legend and additional functionality including pop-up windows
 
+
+
+
     map.addSource('collis-count-hex-grid', {
         type: 'geojson',
         data: collishex
     });
 
+
     map.addLayer({
         'id': 'collis-count-hex-grid-layer',
         'type': 'fill',
         'source': 'collis-count-hex-grid',
-        'paint': {
-            'fill-color': [
-                'step',
-                ['get', 'COUNT'],
-                '#c4c1c0',
-                10, '#bd0026',
-                25, '#e31a1c'
-            ],
-            'fill-opacity': 0.4,
-            'fill-outline-color': 'white'
-        }
+        'paint':
+        {
+            'fill-color':
+                ['step', 
+                    ['get', 'COUNT'],
+                    '#f1eef6', // Colour assigned to any values < first step
+                    1, '#d4b9da', // Colours assigned to values >= each step; 
+                    22, '#c994c7', // 1 standard deviation
+                    42, '#df65b0', // 2 standard deviations
+                    62, '#980043' // 3 standard deviations
+                ],
+            'fill-opacity': 0.6,
+            'fill-outline-color': 'white',
+        },
     });
 });
 
@@ -207,3 +247,73 @@ map.on('click', 'collis-count-hex-grid-layer', (e) => {
         .addTo(map); //Show  popup on map
 });
 
+/*--------------------------------------------------------------------
+ADDING MAPBOX CONTROLS AS ELEMENTS ON MAP
+--------------------------------------------------------------------*/
+//Create geocoder variable
+const geocoder = new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken,
+    mapboxgl: mapboxgl,
+    countries: "ca"
+});
+
+//Use geocoder div to position geocoder on page
+document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
+
+//Add fullscreen option to the map
+map.addControl(new mapboxgl.FullscreenControl());
+
+
+/*--------------------------------------------------------------------
+ADDING INTERACTIVITY BASED ON HTML EVENT
+--------------------------------------------------------------------*/
+
+//Add event listeneer which returns map view to full screen on button click
+document.getElementById('returnbutton').addEventListener('click', () => {
+    map.flyTo({
+        center: [-79.39, 43.7056],
+        zoom: 10,
+        essential: true
+    });
+});
+
+//Change display of legend based on check box
+let legendcheck = document.getElementById('legendcheck');
+
+legendcheck.addEventListener('click', () => {
+    if (legendcheck.checked) {
+        legendcheck.checked = true;
+        legend.style.display = 'block';
+    }
+    else {
+        legend.style.display = "none";
+        legendcheck.checked = false;
+    }
+});
+
+//Collisions, all checkbox
+document.getElementById('collisionscheck').addEventListener('change', (e) => {
+    map.setLayoutProperty(
+        'collisions-TO-layer',
+        'visibility',
+        e.target.checked ? 'visible' : 'none'
+    );
+})
+
+//Collisions, pedestrian checkbox
+document.getElementById('collisionscheck-ped').addEventListener('change', (e) => {
+    map.setLayoutProperty(
+        'involvmenttype-layer',
+        'visibility',
+        e.target.checked ? 'visible' : 'none'
+    );
+})
+
+//Hexagons checkbox
+document.getElementById('hexagons').addEventListener('change', (e) => {
+    map.setLayoutProperty(
+        'collis-count-hex-grid-layer',
+        'visibility',
+        e.target.checked ? 'visible' : 'none'
+    );
+})
