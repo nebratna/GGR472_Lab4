@@ -1,2 +1,3 @@
-# GGR472_Lab4
- 
+This web map represents locations of road collisions involving pedestrians or cyclicst in Toronto, Ontario between 2006 and 2021. The data was derived from Open Data Toronto website (https://open.toronto.ca/dataset/motor-vehicle-collisions-involving-killed-or-seriously-injured-persons/) and have been edited using GIS software.
+The map shows all collisions (black points), pedestrian collisions (red points), and the number of all collisions within a 1km hexagon grid. 
+The user can turn on/off any of these layers, click on a hexagon to obtain associated number of collisions and to search the map for a specific location.
